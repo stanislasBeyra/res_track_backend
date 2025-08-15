@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Student } from 'src/students/entities/student.entity';
+import { Student } from '../../students/entities/student.entity';
 
 export enum AlertType {
   LATE = 'late',

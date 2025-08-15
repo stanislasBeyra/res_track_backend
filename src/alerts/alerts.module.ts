@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AlertsService } from './alerts.service';
 import { AlertsController } from './alerts.controller';
 import { Alert } from './entities/alert.entity';
-import { Student } from 'src/students/entities/student.entity';
-import { User } from 'src/users/entities/user.entity';
-import { NotificationsModule } from 'src/notifications/notifications.module';
+import { Student } from '../students/entities/student.entity';
+import { User } from '../users/entities/user.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [

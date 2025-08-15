@@ -1,14 +1,56 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, Query, ParseIntPipe, ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
+import { 
+  Controller, 
+  Post, 
+  Get, 
+  Put, 
+  Delete, 
+  Body, 
+  Param, 
+  Query, 
+  ParseIntPipe, 
+  ValidationPipe, 
+  HttpException, 
+  HttpStatus 
+} from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBody, 
+  ApiBearerAuth, 
+  ApiQuery, 
+  ApiParam 
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UserRole } from './entities/user.entity';
 
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Post('create/users')
+  @ApiOperation({ 
+    summary: 'Créer un nouvel utilisateur',
+    description: 'Crée un nouvel utilisateur avec les informations fournies' 
+  })
+  @ApiBody({ type: CreateUserDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Utilisateur créé avec succès',
+    type: UserResponseDto 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Données invalides' 
+  })
+  @ApiResponse({ 
+    status: 409, 
+    description: 'Utilisateur déjà existant' 
+  })
   async createUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
     try {
       const user = await this.usersService.createUser(createUserDto);
@@ -28,6 +70,21 @@ export class UsersController {
   }
 
   @Get('/get/all/user')
+  @ApiOperation({ 
+    summary: 'Récupérer tous les utilisateurs',
+    description: 'Retourne la liste de tous les utilisateurs, optionnellement filtrée par rôle' 
+  })
+  @ApiQuery({ 
+    name: 'role', 
+    enum: UserRole, 
+    required: false, 
+    description: 'Filtrer par rôle utilisateur' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Liste des utilisateurs récupérée avec succès',
+    type: [UserResponseDto] 
+  })
   async findAllUsers(@Query('role') role?: UserRole) {
     try {
       let users;
@@ -54,6 +111,19 @@ export class UsersController {
 
   // Find user by id (id in body)
   @Post('/get/user/byid')
+  @ApiOperation({ 
+    summary: 'Récupérer un utilisateur par ID',
+    description: 'Retourne les détails d\'un utilisateur spécifique' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Utilisateur trouvé',
+    type: UserResponseDto 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Utilisateur non trouvé' 
+  })
   async findUserById(@Body('id', ParseIntPipe) id: number) {
     try {
       const user = await this.usersService.findUserById(id);
@@ -74,6 +144,18 @@ export class UsersController {
 
   // Update user status (id in body)
   @Put('/update/users/status')
+  @ApiOperation({ 
+    summary: 'Mettre à jour le statut d\'un utilisateur',
+    description: 'Active ou désactive un utilisateur' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Statut utilisateur mis à jour avec succès' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Utilisateur non trouvé' 
+  })
   async updateUserStatus(
     @Body('id', ParseIntPipe) id: number,
     @Body('isActive') isActive: boolean,
@@ -97,6 +179,18 @@ export class UsersController {
 
   // Delete user (id in body)
   @Delete('/delete/uers')
+  @ApiOperation({ 
+    summary: 'Supprimer un utilisateur',
+    description: 'Supprime définitivement un utilisateur' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Utilisateur supprimé avec succès' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Utilisateur non trouvé' 
+  })
   async deleteUser(@Body('id', ParseIntPipe) id: number) {
     try {
       await this.usersService.deleteUser(id);

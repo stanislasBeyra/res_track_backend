@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Student } from 'src/students/entities/student.entity';
+import { Student } from '../../students/entities/student.entity';
 
 export enum AbsenceReason {
   ILLNESS = 'illness',
@@ -29,22 +29,25 @@ export class Absence {
   reason: AbsenceReason;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ default: false })
   justified: boolean;
 
-  @Column({ name: 'justification_document', length: 255, nullable: true })
-  justificationDocument: string;
+  @Column({ type: 'varchar', name: 'justification_document', length: 255, nullable: true })
+  justificationDocument: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @Column({ name: 'verified_at', nullable: true })
-  verifiedAt: Date;
+  @Column({ type: 'datetime', name: 'verified_at', nullable: true })
+  verifiedAt: Date | null;
 
-  @Column({ name: 'verified_by', nullable: true })
-  verifiedBy: number;
+  @Column({ type: 'int', name: 'verified_by', nullable: true })
+  verifiedBy: number | null;
 
-  
+  // Relations
+  @ManyToOne(() => Student, student => student.absences)
+  @JoinColumn({ name: 'student_id' })
+  student: Student;
 }

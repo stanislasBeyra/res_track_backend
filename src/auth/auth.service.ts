@@ -16,8 +16,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import * as bcrypt from 'bcryptjs';
-import { UserRole } from 'src/users/entities/user.entity';
-import { User } from 'src/users/entities/user.entity';
+import { UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {

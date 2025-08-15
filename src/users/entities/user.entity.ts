@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, OneToMany } from 'typeorm';
 import { Profile } from './profile.entity';
-import { Student } from 'src/students/entities/student.entity';
-import { Notification } from 'src/notifications/entities/notification.entity';
+import { Student } from '../../students/entities/student.entity';
+import { Notification } from '../../notifications/entities/notification.entity';
 
 
 export enum UserRole {

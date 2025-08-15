@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, OneToMany } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
-import { Alert } from 'src/alerts/entities/alert.entity';
+import { User } from '../../users/entities/user.entity';
+import { Alert } from '../../alerts/entities/alert.entity';
+import { Absence } from '../../absences/entities/absence.entity';
 
 export enum StudentStatus {
   ACTIVE = 'active',
@@ -34,7 +35,7 @@ export class Student {
   enrollmentDate: Date;
 
   @Column({ name: 'graduation_date', type: 'date', nullable: true })
-  graduationDate: Date;
+  graduationDate: Date | null;
 
   // Relations
   @OneToOne(() => User, user => user.student)
@@ -44,6 +45,6 @@ export class Student {
   @OneToMany(() => Alert, alert => alert.student)
   alerts: Alert[];
 
-  // @OneToMany(() => Absence, absence => absence.student)
-  // absences: Absence[];
+  @OneToMany(() => Absence, absence => absence.student)
+  absences: Absence[];
 }

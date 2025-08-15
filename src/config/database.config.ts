@@ -8,6 +8,7 @@ import { Profile } from '../users/entities/profile.entity';
 import { Student } from '../students/entities/student.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { Alert } from '../alerts/entities/alert.entity';
+import { Absence } from '../absences/entities/absence.entity';
 import { config } from 'process';
 // Ajoute d'autres entités si besoin
 
@@ -21,7 +22,7 @@ export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOp
     username: configService.get('DB_USERNAME'),
     password: configService.get('DB_PASSWORD'),
     database: `${configService.get('DB_DATABASE')}`,
-    entities: [User, Profile, Student, Notification, Alert],
+    entities: [User, Profile, Student, Notification, Alert, Absence],
     synchronize: !isProduction && configService.get('DB_SYNCHRONIZE', 'true') === 'true',
     logging: configService.get('DB_LOGGING', 'false') === 'true',
     dropSchema: configService.get('DB_DROP_SCHEMA', 'false') === 'true',
@@ -64,4 +65,4 @@ export const dataSourceOptions: DataSourceOptions = {
   logging: process.env.DB_LOGGING === 'true',
 };
 
-export const AppDataSource = new DataSource(dataSourceOptions); 
+export const AppDataSource = new DataSource(dataSourceOptions);

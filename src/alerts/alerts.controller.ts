@@ -17,14 +17,23 @@ import {
   ParseEnumPipe,
   DefaultValuePipe
 } from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBody, 
+  ApiBearerAuth, 
+  ApiParam, 
+  ApiQuery 
+} from '@nestjs/swagger';
 import { AlertsService } from './alerts.service';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { UpdateAlertDto } from './dto/update-alert.dto';
 import { AlertResponseDto } from './dto/alert-response.dto';
 import { AlertType } from './entities/alert.entity';
 
-// DTO pour les réponses standardisées
-export class ApiResponse<T> {
+// DTO pour les réponses standardisées - RENOMMÉ pour éviter le conflit
+export class AlertApiResponse<T> {
   success: boolean;
   message: string;
   data?: T;
@@ -55,6 +64,8 @@ export class AlertStatisticsDto {
   averageResolutionTime?: number;
 }
 
+@ApiTags('Alerts')
+@ApiBearerAuth()
 @Controller('alerts')
 export class AlertsController {
   private readonly logger = new Logger(AlertsController.name);
@@ -62,25 +73,47 @@ export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Post()
-  async create(@Body(ValidationPipe) createAlertDto: CreateAlertDto): Promise<ApiResponse<AlertResponseDto>> {
+  @ApiOperation({ 
+    summary: 'Créer une nouvelle alerte',
+    description: 'Crée une nouvelle alerte pour un étudiant' 
+  })
+  @ApiBody({ type: CreateAlertDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Alerte créée avec succès',
+    type: AlertResponseDto 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Données invalides' 
+  })
+  async create(@Body(ValidationPipe) createAlertDto: CreateAlertDto): Promise<AlertApiResponse<AlertResponseDto>> {
     try {
       this.logger.log(`Requête de création d'alerte - Étudiant: ${createAlertDto.studentId}, Type: ${createAlertDto.type}`);
       
       const alert = await this.alertsService.create(createAlertDto);
       
       this.logger.log(`Alerte créée avec succès - ID: ${alert.id}`);
-      return new ApiResponse(true, 'Alerte créée avec succès', alert);
+      return new AlertApiResponse(true, 'Alerte créée avec succès', alert);
     } catch (error) {
       this.logger.error(`Erreur lors de la création d'alerte: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la création de l\'alerte', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la création de l\'alerte', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Post('bulk')
-  async createBulk(@Body(ValidationPipe) createBulkDto: CreateBulkAlertsDto): Promise<ApiResponse<AlertResponseDto[]>> {
+  @ApiOperation({ 
+    summary: 'Créer plusieurs alertes',
+    description: 'Crée plusieurs alertes en une seule opération' 
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Alertes créées avec succès' 
+  })
+  async createBulk(@Body(ValidationPipe) createBulkDto: CreateBulkAlertsDto): Promise<AlertApiResponse<AlertResponseDto[]>> {
     try {
       this.logger.log(`Requête de création en masse de ${createBulkDto.alerts.length} alerte(s)`);
       
@@ -95,24 +128,38 @@ export class AlertsController {
       const alerts = await this.alertsService.createBulkAlerts(createBulkDto.alerts);
       
       this.logger.log(`${alerts.length} alerte(s) créée(s) en masse avec succès`);
-      return new ApiResponse(true, `${alerts.length} alerte(s) créée(s) avec succès`, alerts);
+      return new AlertApiResponse(true, `${alerts.length} alerte(s) créée(s) avec succès`, alerts);
     } catch (error) {
       this.logger.error(`Erreur lors de la création en masse d'alertes: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la création en masse des alertes', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la création en masse des alertes', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get()
+  @ApiOperation({ 
+    summary: 'Récupérer toutes les alertes',
+    description: 'Retourne la liste des alertes avec filtres optionnels' 
+  })
+  @ApiQuery({ name: 'studentId', required: false, description: 'ID de l\'étudiant' })
+  @ApiQuery({ name: 'type', enum: AlertType, required: false, description: 'Type d\'alerte' })
+  @ApiQuery({ name: 'resolved', required: false, description: 'Statut de résolution' })
+  @ApiQuery({ name: 'page', required: false, description: 'Numéro de page' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Nombre d\'éléments par page' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Liste des alertes récupérée avec succès',
+    type: [AlertResponseDto] 
+  })
   async findAll(
     @Query('studentId', new DefaultValuePipe(null)) studentId?: number,
     @Query('type') type?: AlertType,
     @Query('resolved', new DefaultValuePipe(null)) resolved?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number = 20
-  ): Promise<ApiResponse<AlertResponseDto[]>> {
+  ): Promise<AlertApiResponse<AlertResponseDto[]>> {
     try {
       this.logger.log(`Requête de récupération d'alertes - Filtres: studentId=${studentId}, type=${type}, resolved=${resolved}`);
       
@@ -143,7 +190,7 @@ export class AlertsController {
 
       this.logger.debug(`${paginatedAlerts.length} alerte(s) récupérée(s) (page ${page}/${Math.ceil(alerts.length / limit)})`);
       
-      return new ApiResponse(
+      return new AlertApiResponse(
         true, 
         `${paginatedAlerts.length} alerte(s) récupérée(s)`, 
         paginatedAlerts
@@ -151,14 +198,23 @@ export class AlertsController {
     } catch (error) {
       this.logger.error(`Erreur lors de la récupération des alertes: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la récupération des alertes', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la récupération des alertes', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get('statistics')
-  async getStatistics(): Promise<ApiResponse<AlertStatisticsDto>> {
+  @ApiOperation({ 
+    summary: 'Récupérer les statistiques des alertes',
+    description: 'Retourne les statistiques détaillées des alertes' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Statistiques récupérées avec succès',
+    type: AlertStatisticsDto 
+  })
+  async getStatistics(): Promise<AlertApiResponse<AlertStatisticsDto>> {
     try {
       this.logger.log('Requête de statistiques des alertes');
       
@@ -175,38 +231,55 @@ export class AlertsController {
       };
 
       this.logger.debug(`Statistiques calculées: ${JSON.stringify(extendedStats)}`);
-      return new ApiResponse(true, 'Statistiques récupérées avec succès', extendedStats);
+      return new AlertApiResponse(true, 'Statistiques récupérées avec succès', extendedStats);
     } catch (error) {
       this.logger.error(`Erreur lors de la récupération des statistiques: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la récupération des statistiques', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la récupération des statistiques', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get('student/:studentId/count')
+  @ApiOperation({ 
+    summary: 'Compter les alertes d\'un étudiant',
+    description: 'Retourne le nombre d\'alertes pour un étudiant spécifique' 
+  })
+  @ApiParam({ name: 'studentId', description: 'ID de l\'étudiant' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Comptage récupéré avec succès' 
+  })
   async getStudentAlertsCount(
     @Param('studentId', ParseIntPipe) studentId: number
-  ): Promise<ApiResponse<{ total: number; resolved: number; unresolved: number }>> {
+  ): Promise<AlertApiResponse<{ total: number; resolved: number; unresolved: number }>> {
     try {
       this.logger.log(`Requête de comptage d'alertes pour l'étudiant: ${studentId}`);
       
       const count = await this.alertsService.getAlertsCountByStudent(studentId);
       
       this.logger.debug(`Comptage pour l'étudiant ${studentId}: ${JSON.stringify(count)}`);
-      return new ApiResponse(true, 'Comptage récupéré avec succès', count);
+      return new AlertApiResponse(true, 'Comptage récupéré avec succès', count);
     } catch (error) {
       this.logger.error(`Erreur lors du comptage pour l'étudiant ${studentId}: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors du comptage des alertes', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors du comptage des alertes', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get('types')
-  async getAlertTypes(): Promise<ApiResponse<{ types: AlertType[]; labels: Record<string, string> }>> {
+  @ApiOperation({ 
+    summary: 'Récupérer les types d\'alertes',
+    description: 'Retourne la liste des types d\'alertes disponibles' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Types d\'alertes récupérés avec succès' 
+  })
+  async getAlertTypes(): Promise<AlertApiResponse<{ types: AlertType[]; labels: Record<string, string> }>> {
     try {
       this.logger.log('Requête de récupération des types d\'alertes');
       
@@ -219,60 +292,108 @@ export class AlertsController {
         [AlertType.OTHER]: 'Autre',
       };
 
-      return new ApiResponse(true, 'Types d\'alertes récupérés', { types, labels });
+      return new AlertApiResponse(true, 'Types d\'alertes récupérés', { types, labels });
     } catch (error) {
       this.logger.error(`Erreur lors de la récupération des types: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la récupération des types', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la récupération des types', null, error.message),
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<ApiResponse<AlertResponseDto>> {
+  @ApiOperation({ 
+    summary: 'Récupérer une alerte par ID',
+    description: 'Retourne les détails d\'une alerte spécifique' 
+  })
+  @ApiParam({ name: 'id', description: 'ID de l\'alerte' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alerte récupérée avec succès',
+    type: AlertResponseDto 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Alerte non trouvée' 
+  })
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<AlertApiResponse<AlertResponseDto>> {
     try {
       this.logger.log(`Requête de récupération de l'alerte: ${id}`);
       
       const alert = await this.alertsService.findOne(id);
       
       this.logger.debug(`Alerte ${id} récupérée avec succès`);
-      return new ApiResponse(true, 'Alerte récupérée avec succès', alert);
+      return new AlertApiResponse(true, 'Alerte récupérée avec succès', alert);
     } catch (error) {
       this.logger.error(`Erreur lors de la récupération de l'alerte ${id}: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la récupération de l\'alerte', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la récupération de l\'alerte', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Patch(':id')
+  @ApiOperation({ 
+    summary: 'Mettre à jour une alerte',
+    description: 'Met à jour les informations d\'une alerte existante' 
+  })
+  @ApiParam({ name: 'id', description: 'ID de l\'alerte' })
+  @ApiBody({ type: UpdateAlertDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alerte mise à jour avec succès',
+    type: AlertResponseDto 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Alerte non trouvée' 
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body(ValidationPipe) updateAlertDto: UpdateAlertDto
-  ): Promise<ApiResponse<AlertResponseDto>> {
+  ): Promise<AlertApiResponse<AlertResponseDto>> {
     try {
       this.logger.log(`Requête de mise à jour de l'alerte: ${id}`);
       
       const alert = await this.alertsService.update(id, updateAlertDto);
       
       this.logger.log(`Alerte ${id} mise à jour avec succès`);
-      return new ApiResponse(true, 'Alerte mise à jour avec succès', alert);
+      return new AlertApiResponse(true, 'Alerte mise à jour avec succès', alert);
     } catch (error) {
       this.logger.error(`Erreur lors de la mise à jour de l'alerte ${id}: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la mise à jour de l\'alerte', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la mise à jour de l\'alerte', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Patch(':id/resolve')
+  @ApiOperation({ 
+    summary: 'Résoudre une alerte',
+    description: 'Marque une alerte comme résolue' 
+  })
+  @ApiParam({ name: 'id', description: 'ID de l\'alerte' })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        resolvedBy: { type: 'number', description: 'ID de l\'utilisateur qui résout l\'alerte' }
+      },
+      required: ['resolvedBy']
+    }
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alerte résolue avec succès',
+    type: AlertResponseDto 
+  })
   async resolve(
     @Param('id', ParseIntPipe) id: number,
     @Body('resolvedBy', ParseIntPipe) resolvedBy: number
-  ): Promise<ApiResponse<AlertResponseDto>> {
+  ): Promise<AlertApiResponse<AlertResponseDto>> {
     try {
       this.logger.log(`Requête de résolution de l'alerte: ${id} par l'utilisateur: ${resolvedBy}`);
       
@@ -283,20 +404,38 @@ export class AlertsController {
       const alert = await this.alertsService.resolve(id, resolvedBy);
       
       this.logger.log(`Alerte ${id} résolue avec succès par l'utilisateur ${resolvedBy}`);
-      return new ApiResponse(true, 'Alerte résolue avec succès', alert);
+      return new AlertApiResponse(true, 'Alerte résolue avec succès', alert);
     } catch (error) {
       this.logger.error(`Erreur lors de la résolution de l'alerte ${id}: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la résolution de l\'alerte', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la résolution de l\'alerte', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Patch('bulk/resolve')
+  @ApiOperation({ 
+    summary: 'Résoudre plusieurs alertes',
+    description: 'Résout plusieurs alertes en une seule opération' 
+  })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        alertIds: { type: 'array', items: { type: 'number' }, description: 'Liste des IDs d\'alertes à résoudre' },
+        resolvedBy: { type: 'number', description: 'ID de l\'utilisateur qui résout les alertes' }
+      },
+      required: ['alertIds', 'resolvedBy']
+    }
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alertes résolues avec succès' 
+  })
   async resolveBulk(
     @Body() body: { alertIds: number[]; resolvedBy: number }
-  ): Promise<ApiResponse<{ resolved: number; errors: string[] }>> {
+  ): Promise<AlertApiResponse<{ resolved: number; errors: string[] }>> {
     try {
       this.logger.log(`Requête de résolution en masse de ${body.alertIds?.length || 0} alerte(s)`);
       
@@ -325,7 +464,7 @@ export class AlertsController {
       }
 
       this.logger.log(`Résolution en masse terminée: ${resolved} succès, ${errors.length} erreurs`);
-      return new ApiResponse(
+      return new AlertApiResponse(
         true, 
         `${resolved} alerte(s) résolue(s) avec succès`, 
         { resolved, errors }
@@ -333,32 +472,62 @@ export class AlertsController {
     } catch (error) {
       this.logger.error(`Erreur lors de la résolution en masse: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la résolution en masse', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la résolution en masse', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<ApiResponse<null>> {
+  @ApiOperation({ 
+    summary: 'Supprimer une alerte',
+    description: 'Supprime définitivement une alerte' 
+  })
+  @ApiParam({ name: 'id', description: 'ID de l\'alerte' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alerte supprimée avec succès' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Alerte non trouvée' 
+  })
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<AlertApiResponse<null>> {
     try {
       this.logger.log(`Requête de suppression de l'alerte: ${id}`);
       
       await this.alertsService.remove(id);
       
       this.logger.log(`Alerte ${id} supprimée avec succès`);
-      return new ApiResponse(true, 'Alerte supprimée avec succès');
+      return new AlertApiResponse(true, 'Alerte supprimée avec succès');
     } catch (error) {
       this.logger.error(`Erreur lors de la suppression de l'alerte ${id}: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la suppression de l\'alerte', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la suppression de l\'alerte', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
   @Delete('bulk')
-  async removeBulk(@Body() body: { alertIds: number[] }): Promise<ApiResponse<{ deleted: number; errors: string[] }>> {
+  @ApiOperation({ 
+    summary: 'Supprimer plusieurs alertes',
+    description: 'Supprime plusieurs alertes en une seule opération' 
+  })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        alertIds: { type: 'array', items: { type: 'number' }, description: 'Liste des IDs d\'alertes à supprimer' }
+      },
+      required: ['alertIds']
+    }
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Alertes supprimées avec succès' 
+  })
+  async removeBulk(@Body() body: { alertIds: number[] }): Promise<AlertApiResponse<{ deleted: number; errors: string[] }>> {
     try {
       this.logger.log(`Requête de suppression en masse de ${body.alertIds?.length || 0} alerte(s)`);
       
@@ -383,7 +552,7 @@ export class AlertsController {
       }
 
       this.logger.log(`Suppression en masse terminée: ${deleted} succès, ${errors.length} erreurs`);
-      return new ApiResponse(
+      return new AlertApiResponse(
         true, 
         `${deleted} alerte(s) supprimée(s) avec succès`, 
         { deleted, errors }
@@ -391,7 +560,7 @@ export class AlertsController {
     } catch (error) {
       this.logger.error(`Erreur lors de la suppression en masse: ${error.message}`, error.stack);
       throw new HttpException(
-        new ApiResponse(false, 'Erreur lors de la suppression en masse', null, error.message),
+        new AlertApiResponse(false, 'Erreur lors de la suppression en masse', null, error.message),
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
