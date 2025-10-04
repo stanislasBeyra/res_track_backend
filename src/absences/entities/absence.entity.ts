@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
+import { Course } from '../../courses/entities/course.entity';
 
 export enum AbsenceReason {
   ILLNESS = 'illness',
@@ -17,6 +18,9 @@ export class Absence {
 
   @Column({ name: 'student_id' })
   studentId: number;
+
+  @Column({ name: 'course_id', nullable: true })
+  courseId: number;
 
   @Column({ type: 'date' })
   date: Date;
@@ -50,4 +54,8 @@ export class Absence {
   @ManyToOne(() => Student, student => student.absences)
   @JoinColumn({ name: 'student_id' })
   student: Student;
+
+  @ManyToOne(() => Course, course => course.absences)
+  @JoinColumn({ name: 'course_id' })
+  course: Course;
 }

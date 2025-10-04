@@ -228,4 +228,13 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { username } });
     return user || undefined;
   }
+
+  // Standard findOne method that other services expect
+  async findOne(id: number): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new BadRequestException('Utilisateur non trouvé');
+    }
+    return user;
+  }
 }

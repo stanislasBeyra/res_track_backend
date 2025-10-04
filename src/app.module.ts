@@ -9,6 +9,12 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { AbsencesModule } from './absences/absences.module';
 import { AuthModule } from './auth/auth.module';
+import { ReportsModule } from './reports/reports.module';
+import { StatisticsModule } from './statistics/statistics.module';
+import { CoursesModule } from './courses/courses.module';
+import { SchedulesModule } from './schedules/schedules.module';
+import { FilesModule } from './files/files.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -20,7 +26,12 @@ import { AuthModule } from './auth/auth.module';
     NotificationsModule,
     AlertsModule,
     AbsencesModule,
-   
+    ReportsModule,
+    StatisticsModule,
+    CoursesModule,
+    SchedulesModule,
+    FilesModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

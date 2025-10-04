@@ -9,7 +9,7 @@ import { Student } from '../students/entities/student.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { Alert } from '../alerts/entities/alert.entity';
 import { Absence } from '../absences/entities/absence.entity';
-import { config } from 'process';
+import { config } from 'process'; 
 // Ajoute d'autres entités si besoin
 
 export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
